@@ -65,6 +65,7 @@ class DmShuffleMock {
         this.count = 0;
     }
     toArray() {
+        this.count++;
         return this.struct.map(columnType => columnType.patternFunction(this.count));
     }
 
@@ -78,18 +79,22 @@ class DmShuffleMock {
 }
 
 
-const dmCarsRepo = new DmRepo([
+const dmCarsRepo = new DmShuffleMock([
     makeColumnType("make_id", (i) => i),
     makeColumnType("make_name", () => faker.fake("{{company.companyName}}")),
     makeColumnType("model_name", () => faker.fake("{{random.word}}")),
-    makeColumnType("record_dt", () => new Date(faker.fake("{{date.recent}}")))
+    makeColumnType("record_dt", () => { 
+        let d = new Date(faker.fake("{{date.recent}}"))
+        let str = `${d.getDay()}/${d.getMonth()}/${d.getFullYear()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
+        return str;
+    })
 ]);
 
-const writeble = fs.createWriteStream('mycsv.csv');
+const execDate = new Date().valueOf();
+const writeble = fs.createWriteStream(`backUp-${execDate}.csv`);
 writeble.write(`"${dmCarsRepo.schema.join('","')}"`);
-writeble.write('\n');
-for (let i = 0; i < 1000000; i++) {
-    writeble.write(dmCarsRepo.createTuple().toCSV());
+for (let i = 0; i < 10000; i++) {
     writeble.write('\n');
+    writeble.write(dmCarsRepo.toCSV());
 }
 writeble.close();
