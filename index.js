@@ -90,11 +90,20 @@ const dmCarsRepo = new DmShuffleMock([
     })
 ]);
 
+console.time('PROCESO');
 const execDate = new Date().valueOf();
 const writeble = fs.createWriteStream(`backUp-${execDate}.csv`);
 writeble.write(`"${dmCarsRepo.schema.join('","')}"`);
-for (let i = 0; i < 10000; i++) {
+writeble.cork();
+const total = 1000000;
+for (let i = 0; i < total; i++) {
+    if(i%10000 == 0) {
+        console.log('PROCESO ' + Math.round(i / total * 10000) / 100 + '%');
+        writeble.uncork()
+        writeble.cork()
+    }
     writeble.write('\n');
     writeble.write(dmCarsRepo.toCSV());
 }
 writeble.close();
+console.timeEnd('PROCESO');
