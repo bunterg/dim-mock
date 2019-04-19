@@ -13,7 +13,7 @@ class MockReadable extends Readable {
         this.line = this.__mock.schema.join(',');
     }
     _read(size) {
-        const chunkSize = 4 * 1024 * 1024;
+        const chunkSize = size;
         const buf = Buffer.alloc(chunkSize);
         let i = 0;
         let end = 0;
