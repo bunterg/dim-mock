@@ -13,13 +13,14 @@ class MockReadable extends Readable {
         this.line = this.__mock.schema.join(',');
     }
     _read(size) {
-        const buf = Buffer.alloc(size);
+        const chunkSize = 4 * 1024 * 1024;
+        const buf = Buffer.alloc(chunkSize);
         let i = 0;
         let end = 0;
         while (this._index <= this._quantity) {
             let line = this._lastLine;
             end = i + line.length;
-            if(end < size) {
+            if(end < chunkSize) {
                 buf.fill(line, i, end);
             } else {
                 end = i;
@@ -29,7 +30,6 @@ class MockReadable extends Readable {
             this._newLine();
             this._index++
         }
-        console.log('PROGRESS ' + (this._index - 1) + ' OUT OF ' + this._quantity);
         if(end == 0) {
             this.push(null);
         }
@@ -147,8 +147,8 @@ const salesAreaMock = new DmShuffleMock(salesAreaSchema);
 const factMock = new DmShuffleMock(factSchema);
 
 writableFile('dim_cars', carsMock, carsLength);
-// writableFile('dim_msa', msaMock, msaLength);
-// writableFile('dim_trans', transMock, datesLength);
-// writableFile('dim_dealers', dealersMock, dealersLength);
-// writableFile('dim_sales_area', salesAreaMock, salesAreaLength);
-// writableFile('fact_sales', factMock, factLength);
+writableFile('dim_msa', msaMock, msaLength);
+writableFile('dim_trans', transMock, datesLength);
+writableFile('dim_dealers', dealersMock, dealersLength);
+writableFile('dim_sales_area', salesAreaMock, salesAreaLength);
+writableFile('fact_sales', factMock, factLength);
