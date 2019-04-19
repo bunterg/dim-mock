@@ -1,8 +1,8 @@
-const faker = require('faker');
-const fs = require('fs');
-const { Readable } = require('stream');
-
-const { makeColumnType, DmShuffleMock} = require('./mock')
+var faker = require('faker');
+var fs = require('fs');
+var { Readable } = require('stream');
+var { Buffer } = require('buffer');
+var { makeColumnType, DmShuffleMock} = require('./mock')
 
 class MockReadable extends Readable {
     constructor(mock, quantity, options){
@@ -10,19 +10,43 @@ class MockReadable extends Readable {
         this.__mock = mock;
         this._quantity = quantity;
         this._index = 0;
+        this.line = '\n'+this.__mock.toCSV();
     }
-    _read() {
+    _read(size) {
         if(this._index == 0) {
             this.push(this.__mock.schema.join(','));
         } else if(this._index < this._quantity) {
-            this.push('\n'+this.__mock.toCSV());
-            if(this._index%100000 == 0) {
-                console.log('PROCESO ' + Math.round(this._index / this._quantity * 10000) / 100 + '%');
+            const buf = Buffer.alloc(size);
+            let i = 0;
+            let end = 0;
+            while (this._index < this._quantity) {
+                let line = this._lastLine;
+                end = i + line.length;
+                if(end < size) {
+                    buf.fill(line, i, end);
+                } else {
+                    end = i;
+                    break
+                }
+                i = end;
+                this._newLine();
+
+                if(this._index%100000 == 0) {
+                    console.log('PROCESO ' + Math.round(this._index / this._quantity * 10000) / 100 + '%');
+                }
+                this._index++
             }
+            this.push(buf.slice(0, end));
         } else {
             this.push(null);
         }
         this._index++
+    }
+    _newLine() {
+        this.line = '\n'+this.__mock.toCSV();
+    }
+    get _lastLine() {
+        return this.line;
     }
 }
 function writeFile(writeble, mock, quantity) {
@@ -40,8 +64,8 @@ function writableFile(tableName, mock, quantity) {
 
 function recentDate () {
     let d = new Date(faker.fake("{{date.recent}}"))
-    let str = `${d.getDay()}/${d.getMonth()}/${d.getFullYear()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
-    return str;
+    // let str = `${d.getDay()}/${d.getMonth()}/${d.getFullYear()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
+    return d.toISOString().replace('T',' ').replace('Z','');
 }
 
 
