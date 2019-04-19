@@ -10,37 +10,30 @@ class MockReadable extends Readable {
         this.__mock = mock;
         this._quantity = quantity;
         this._index = 0;
-        this.line = '\n'+this.__mock.toCSV();
+        this.line = this.__mock.schema.join(',');
     }
     _read(size) {
-        if(this._index == 0) {
-            this.push(this.__mock.schema.join(','));
-        } else if(this._index < this._quantity) {
-            const buf = Buffer.alloc(size);
-            let i = 0;
-            let end = 0;
-            while (this._index < this._quantity) {
-                let line = this._lastLine;
-                end = i + line.length;
-                if(end < size) {
-                    buf.fill(line, i, end);
-                } else {
-                    end = i;
-                    break
-                }
-                i = end;
-                this._newLine();
-
-                if(this._index%100000 == 0) {
-                    console.log('PROCESO ' + Math.round(this._index / this._quantity * 10000) / 100 + '%');
-                }
-                this._index++
+        const buf = Buffer.alloc(size);
+        let i = 0;
+        let end = 0;
+        while (this._index <= this._quantity) {
+            let line = this._lastLine;
+            end = i + line.length;
+            if(end < size) {
+                buf.fill(line, i, end);
+            } else {
+                end = i;
+                break
             }
-            this.push(buf.slice(0, end));
-        } else {
+            i = end;
+            this._newLine();
+            this._index++
+        }
+        console.log('PROGRESS ' + (this._index - 1) + ' OUT OF ' + this._quantity);
+        if(end == 0) {
             this.push(null);
         }
-        this._index++
+        this.push(buf.slice(0, end));
     }
     _newLine() {
         this.line = '\n'+this.__mock.toCSV();
@@ -49,22 +42,23 @@ class MockReadable extends Readable {
         return this.line;
     }
 }
-function writeFile(writeble, mock, quantity) {
+function writeFile(writeble, mock, quantity, tag) {
+    console.time('FILE ' + tag);
     const mockReadable = new MockReadable(mock, quantity);
-    console.time('PROCESO');
     mockReadable.pipe(writeble);
-    console.timeEnd('PROCESO');
+    writeble.on('finish', () => {
+        console.timeEnd('FILE ' + tag);
+    });
 }
 
 function writableFile(tableName, mock, quantity) {
     const execDate = new Date().valueOf();
     const writable = fs.createWriteStream(`${tableName}-${execDate}.csv`);
-    writeFile(writable, mock, quantity)
+    writeFile(writable, mock, quantity, tableName)
 }
 
 function recentDate () {
     let d = new Date(faker.fake("{{date.recent}}"))
-    // let str = `${d.getDay()}/${d.getMonth()}/${d.getFullYear()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`
     return d.toISOString().replace('T',' ').replace('Z','');
 }
 
@@ -153,8 +147,8 @@ const salesAreaMock = new DmShuffleMock(salesAreaSchema);
 const factMock = new DmShuffleMock(factSchema);
 
 writableFile('dim_cars', carsMock, carsLength);
-writableFile('dim_msa', msaMock, msaLength);
-writableFile('dim_trans', transMock, datesLength);
-writableFile('dim_dealers', dealersMock, dealersLength);
-writableFile('dim_sales_area', salesAreaMock, salesAreaLength);
-writableFile('fact_sales', factMock, factLength);
+// writableFile('dim_msa', msaMock, msaLength);
+// writableFile('dim_trans', transMock, datesLength);
+// writableFile('dim_dealers', dealersMock, dealersLength);
+// writableFile('dim_sales_area', salesAreaMock, salesAreaLength);
+// writableFile('fact_sales', factMock, factLength);
