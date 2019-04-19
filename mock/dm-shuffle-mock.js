@@ -13,6 +13,6 @@ module.exports = class DmShuffleMock {
     }
 
     toCSV() {
-        return `"${this.toArray().join('","')}"`;
+        return this.toArray().join(',');
     }
 }

@@ -14,6 +14,6 @@ module.exports = class DmMock {
     }
 
     toCSV() {
-        return `"${this.toArray().join('","')}"`;
+        return `${this.toArray().join(',')}`;
     }
 }
